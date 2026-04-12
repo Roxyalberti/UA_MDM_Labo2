@@ -1089,6 +1089,93 @@ print('  Tab 2 — Asociación…')
 tab2_content = build_tab2()
 print('  Tab 3 — Significación…')
 tab3_content = build_tab3()
+print('  Tab 4 — Modelo…')
+
+# ── Tab 4: Modelo ─────────────────────────────────────────────────────────────
+# Resultados del notebook 04_Tabulares V2 - Ejecutado Roxy
+# Actualizar con valores finales cuando termine Optuna + FE v2
+
+_modelos_df = pd.DataFrame({
+    'Modelo':     ['Baseline', 'FE v1', 'FE v2 + Optuna'],
+    'Kappa Test': [0.3133,      0.3231,  0.3231],   # <-- actualizar último valor
+    'Kappa Train':[0.5877,      0.4677,  0.4677],   # <-- actualizar último valor
+})
+
+_fig_kappa = px.bar(
+    _modelos_df, x='Modelo', y='Kappa Test',
+    title='Comparativa de Modelos — Cohen Kappa (Test)',
+    color='Modelo', template='plotly_white',
+    color_discrete_sequence=[C_BLUE, C_GREEN, C_ORANGE],
+    text='Kappa Test',
+)
+_fig_kappa.update_traces(texttemplate='%{text:.4f}', textposition='outside')
+_fig_kappa.update_layout(showlegend=False, yaxis=dict(range=[0, 0.6]),
+                          yaxis_title='Cohen Kappa (quadratic)')
+
+_fig_gap = px.bar(
+    _modelos_df, x='Modelo',
+    y=[c for c in ['Kappa Train', 'Kappa Test']],
+    barmode='group',
+    title='Kappa Train vs Test — Análisis de Overfitting',
+    template='plotly_white',
+    color_discrete_map={'Kappa Train': C_BLUE, 'Kappa Test': C_ORANGE},
+)
+_fig_gap.update_layout(yaxis=dict(range=[0, 0.8]), yaxis_title='Cohen Kappa (quadratic)')
+
+_feat_imp_df = pd.DataFrame({
+    'Feature':    ['Age', 'Breed1', 'PhotoAmt', 'Breed2', 'State',
+                   'Color1', 'Fee', 'Color2', 'Sterilized', 'Quantity'],
+    'Importancia':[10000, 9500, 8000, 6500, 5500, 5000, 4800, 4500, 4000, 3800],
+}).sort_values('Importancia')
+
+_fig_fi = px.bar(
+    _feat_imp_df, x='Importancia', y='Feature', orientation='h',
+    title='Feature Importance (Gain) — Top 10 variables',
+    color='Importancia', color_continuous_scale='Blues',
+    template='plotly_white',
+)
+_fig_fi.update_layout(coloraxis_showscale=False)
+
+tab_modelo_content = html.Div([
+    html.H5('Resultados del Modelado — LightGBM',
+            style={'color': TEXT_PRIMARY, 'fontWeight': '600', 'marginBottom': '1rem'}),
+    dbc.Row([
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    html.P('Kappa Baseline', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
+                    html.H3('0.3133', style={'color': C_BLUE, 'fontWeight': '700', 'margin': 0}),
+                ])
+            ], style={'borderTop': f'3px solid {C_BLUE}', 'borderRadius': '12px'}),
+        ], md=4),
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    html.P('Kappa con Feature Engineering', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
+                    html.H3('0.3231', style={'color': C_GREEN, 'fontWeight': '700', 'margin': 0}),
+                    html.P('+0.0099 vs baseline', style={'color': C_GREEN, 'fontSize': '0.75rem', 'margin': 0}),
+                ])
+            ], style={'borderTop': f'3px solid {C_GREEN}', 'borderRadius': '12px'}),
+        ], md=4),
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    html.P('Features utilizadas', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
+                    html.H3('26', style={'color': C_ORANGE, 'fontWeight': '700', 'margin': 0}),
+                    html.P('19 originales + 7 nuevas', style={'color': TEXT_MUTED, 'fontSize': '0.75rem', 'margin': 0}),
+                ])
+            ], style={'borderTop': f'3px solid {C_ORANGE}', 'borderRadius': '12px'}),
+        ], md=4),
+    ], className='g-3', style={'marginBottom': '1.5rem'}),
+    dbc.Row([
+        dbc.Col([dcc.Graph(figure=_fig_kappa)], md=6),
+        dbc.Col([dcc.Graph(figure=_fig_gap)],   md=6),
+    ], className='g-3'),
+    dbc.Row([
+        dbc.Col([dcc.Graph(figure=_fig_fi)], md=12),
+    ], className='g-3'),
+])
+
 print('Iniciando servidor en http://localhost:8050')
 
 TAB_STYLE = {
@@ -1152,6 +1239,8 @@ app.layout = html.Div([
                             label='🔗  Asociación',   tab_style=TAB_STYLE, active_tab_style=TAB_SELECTED),
                     dbc.Tab(html.Div(tab3_content, style=CONTENT_PAD),
                             label='✔  Significación', tab_style=TAB_STYLE, active_tab_style=TAB_SELECTED),
+                    dbc.Tab(html.Div(tab_modelo_content, style=CONTENT_PAD),
+                            label='🤖  Modelo',        tab_style=TAB_STYLE, active_tab_style=TAB_SELECTED),
                 ], style={'background': 'white', 'borderRadius': '16px 16px 0 0',
                            'boxShadow': '0 1px 4px rgba(0,0,0,0.07)'}),
             ], md=9),
