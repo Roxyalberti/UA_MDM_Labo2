@@ -1095,32 +1095,44 @@ print('  Tab 4 — Modelo…')
 # Resultados del notebook 04_Tabulares V2 - Ejecutado Roxy
 # Actualizar con valores finales cuando termine Optuna + FE v2
 
+# ── Resultados finales v3 (Abril 2026) ──────────────────────────────────────
+# Original (profe): 04_Tabulares.ipynb  — Optuna CV sobre 19 features → CV 0.3639
+# Ajustado Roxy:    04_Tabulares_V2_SeccionF.ipynb — FE v2 + Optuna → Test 0.3371
+
 _modelos_df = pd.DataFrame({
-    'Modelo':     ['Baseline', 'FE v1', 'FE v2 + Optuna'],
-    'Kappa Test': [0.3133,      0.3231,  0.3330],
-    'Kappa Train':[0.5877,      0.4677,  0.4677],
+    'Modelo': [
+        'Baseline\n(Original)',
+        'FE v1\n(Roxy)',
+        'FE v2 + Optuna simple\n(Roxy)',
+        'FE v2 + Optuna 5-fold CV\n(Roxy)',
+    ],
+    'Kappa Test': [0.3133, 0.3231, 0.3371, 0.3196],
+    'Kappa Train':[0.5877, 0.4677, 0.4677, 0.4677],
+    'Tipo':       ['Original', 'Ajustado Roxy', 'Ajustado Roxy', 'Ajustado Roxy'],
 })
 
 _fig_kappa = px.bar(
     _modelos_df, x='Modelo', y='Kappa Test',
     title='Comparativa de Modelos — Cohen Kappa (Test)',
-    color='Modelo', template='plotly_white',
-    color_discrete_sequence=[C_BLUE, C_GREEN, C_ORANGE],
+    color='Tipo', template='plotly_white',
+    color_discrete_map={'Original': C_BLUE, 'Ajustado Roxy': C_GREEN},
     text='Kappa Test',
 )
 _fig_kappa.update_traces(texttemplate='%{text:.4f}', textposition='outside')
-_fig_kappa.update_layout(showlegend=False, yaxis=dict(range=[0, 0.6]),
-                          yaxis_title='Cohen Kappa (quadratic)')
+_fig_kappa.update_layout(showlegend=True, yaxis=dict(range=[0, 0.55]),
+                          yaxis_title='Cohen Kappa (quadratic)',
+                          xaxis_tickangle=-15)
 
 _fig_gap = px.bar(
     _modelos_df, x='Modelo',
-    y=[c for c in ['Kappa Train', 'Kappa Test']],
+    y=['Kappa Train', 'Kappa Test'],
     barmode='group',
     title='Kappa Train vs Test — Análisis de Overfitting',
     template='plotly_white',
     color_discrete_map={'Kappa Train': C_BLUE, 'Kappa Test': C_ORANGE},
 )
-_fig_gap.update_layout(yaxis=dict(range=[0, 0.8]), yaxis_title='Cohen Kappa (quadratic)')
+_fig_gap.update_layout(yaxis=dict(range=[0, 0.8]), yaxis_title='Cohen Kappa (quadratic)',
+                        xaxis_tickangle=-15)
 
 _feat_imp_df = pd.DataFrame({
     'Feature':    ['Age', 'Breed1', 'PhotoAmt', 'Breed2', 'State',
@@ -1137,32 +1149,35 @@ _fig_fi = px.bar(
 _fig_fi.update_layout(coloraxis_showscale=False)
 
 tab_modelo_content = html.Div([
-    html.H5('Resultados del Modelado — LightGBM  |  v2 (Abril 2026)',
-            style={'color': TEXT_PRIMARY, 'fontWeight': '600', 'marginBottom': '1rem'}),
+    html.H5('Resultados del Modelado — LightGBM  |  v3 Final (Abril 2026)',
+            style={'color': TEXT_PRIMARY, 'fontWeight': '600', 'marginBottom': '0.3rem'}),
+    html.P('Original: notebook del profesor (19 features)  •  Ajustado Roxy: FE v1+v2 + Optuna (32 features)',
+           style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'marginBottom': '1rem'}),
     dbc.Row([
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.P('Kappa Baseline', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
+                    html.P('Kappa Baseline (Original)', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
                     html.H3('0.3133', style={'color': C_BLUE, 'fontWeight': '700', 'margin': 0}),
+                    html.P('19 features, sin FE', style={'color': TEXT_MUTED, 'fontSize': '0.75rem', 'margin': 0}),
                 ])
             ], style={'borderTop': f'3px solid {C_BLUE}', 'borderRadius': '12px'}),
         ], md=4),
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.P('Mejor Kappa (FE v2 + Optuna)', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
-                    html.H3('0.3330', style={'color': C_GREEN, 'fontWeight': '700', 'margin': 0}),
-                    html.P('+0.0197 vs baseline', style={'color': C_GREEN, 'fontSize': '0.75rem', 'margin': 0}),
+                    html.P('Mejor Kappa (Ajustado Roxy)', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
+                    html.H3('0.3371', style={'color': C_GREEN, 'fontWeight': '700', 'margin': 0}),
+                    html.P('+0.0238 vs baseline  •  FE v2 + Optuna', style={'color': C_GREEN, 'fontSize': '0.75rem', 'margin': 0}),
                 ])
             ], style={'borderTop': f'3px solid {C_GREEN}', 'borderRadius': '12px'}),
         ], md=4),
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.P('Features utilizadas', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
+                    html.P('Features — versión Roxy', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
                     html.H3('32', style={'color': C_ORANGE, 'fontWeight': '700', 'margin': 0}),
-                    html.P('19 originales + 13 nuevas', style={'color': TEXT_MUTED, 'fontSize': '0.75rem', 'margin': 0}),
+                    html.P('19 originales + 7 FE v1 + 6 FE v2', style={'color': TEXT_MUTED, 'fontSize': '0.75rem', 'margin': 0}),
                 ])
             ], style={'borderTop': f'3px solid {C_ORANGE}', 'borderRadius': '12px'}),
         ], md=4),
