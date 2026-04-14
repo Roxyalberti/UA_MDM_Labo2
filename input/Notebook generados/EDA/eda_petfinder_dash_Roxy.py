@@ -1103,11 +1103,11 @@ _modelos_df = pd.DataFrame({
     'Modelo': [
         'Baseline\n(Original)',
         'FE v1\n(Roxy)',
-        'FE v2 + Optuna simple\n(Roxy)',
-        'FE v2 + Optuna 5-fold CV\n(Roxy)',
+        'FE v2 + Optuna\n(Roxy)',
+        'FE v3 + Optuna\n(Roxy Optimizado)',
     ],
-    'Kappa Test': [0.3133, 0.3231, 0.3371, 0.3196],
-    'Kappa Train':[0.5877, 0.4677, 0.4677, 0.4677],
+    'Kappa Test': [0.3133, 0.3231, 0.3371, 0.3595],
+    'Kappa Train':[0.5877, 0.4677, 0.4677, 0.6363],
     'Tipo':       ['Original', 'Ajustado Roxy', 'Ajustado Roxy', 'Ajustado Roxy'],
 })
 
@@ -1135,23 +1135,32 @@ _fig_gap.update_layout(yaxis=dict(range=[0, 0.8]), yaxis_title='Cohen Kappa (qua
                         xaxis_tickangle=-15)
 
 _feat_imp_df = pd.DataFrame({
-    'Feature':    ['Age', 'Breed1', 'PhotoAmt', 'Breed2', 'State',
-                   'Color1', 'Fee', 'Color2', 'Sterilized', 'Quantity'],
-    'Importancia':[10000, 9500, 8000, 6500, 5500, 5000, 4800, 4500, 4000, 3800],
+    'Feature':    ['desc_length', 'avg_label_score', 'sentiment_magnitude',
+                   'Age_x_PhotoAmt', 'Age', 'n_labels',
+                   'PhotoPerAnimal', 'Breed1', 'sentiment_score', 'n_sentences',
+                   'Color2', 'PhotoAmt', 'State', 'Color1', 'Breed2'],
+    'Importancia':[5500, 5200, 3100, 2800, 2600, 2400,
+                   2200, 2000, 1900, 1800,
+                   1600, 1500, 1400, 1300, 1200],
+    'Tipo': ['Texto/Imagen','Texto/Imagen','Texto/Imagen',
+             'FE v2','Original','Texto/Imagen',
+             'FE v1','Original','Texto/Imagen','Texto/Imagen',
+             'Original','Original','Original','Original','Original'],
 }).sort_values('Importancia')
 
 _fig_fi = px.bar(
     _feat_imp_df, x='Importancia', y='Feature', orientation='h',
-    title='Feature Importance (Gain) — Top 10 variables',
-    color='Importancia', color_continuous_scale='Blues',
-    template='plotly_white',
+    title='Feature Importance (Gain) — Top 15 variables (FE v3)',
+    color='Tipo', template='plotly_white',
+    color_discrete_map={'Original': C_BLUE, 'FE v1': C_GREEN,
+                        'FE v2': C_ORANGE, 'Texto/Imagen': C_PURPLE},
 )
-_fig_fi.update_layout(coloraxis_showscale=False)
+_fig_fi.update_layout(showlegend=True)
 
 tab_modelo_content = html.Div([
-    html.H5('Resultados del Modelado — LightGBM  |  v3 Final (Abril 2026)',
+    html.H5('Resultados del Modelado — LightGBM  |  v4 Optimizado (Abril 2026)',
             style={'color': TEXT_PRIMARY, 'fontWeight': '600', 'marginBottom': '0.3rem'}),
-    html.P('Original: notebook del profesor (19 features)  •  Ajustado Roxy: FE v1+v2 + Optuna (32 features)',
+    html.P('Original: notebook del profesor (19 features)  •  Optimizado Roxy: FE v3 + texto + imágenes + Optuna (39 features)',
            style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'marginBottom': '1rem'}),
     dbc.Row([
         dbc.Col([
@@ -1166,18 +1175,18 @@ tab_modelo_content = html.Div([
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.P('Mejor Kappa (Ajustado Roxy)', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
-                    html.H3('0.3371', style={'color': C_GREEN, 'fontWeight': '700', 'margin': 0}),
-                    html.P('+0.0238 vs baseline  •  FE v2 + Optuna', style={'color': C_GREEN, 'fontSize': '0.75rem', 'margin': 0}),
+                    html.P('Mejor Kappa (Optimizado Roxy)', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
+                    html.H3('0.3595', style={'color': C_GREEN, 'fontWeight': '700', 'margin': 0}),
+                    html.P('+0.0462 vs baseline  •  FE v3 + Optuna 50 trials', style={'color': C_GREEN, 'fontSize': '0.75rem', 'margin': 0}),
                 ])
             ], style={'borderTop': f'3px solid {C_GREEN}', 'borderRadius': '12px'}),
         ], md=4),
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.P('Features — versión Roxy', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
-                    html.H3('32', style={'color': C_ORANGE, 'fontWeight': '700', 'margin': 0}),
-                    html.P('19 originales + 7 FE v1 + 6 FE v2', style={'color': TEXT_MUTED, 'fontSize': '0.75rem', 'margin': 0}),
+                    html.P('Features — Optimizado Roxy', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
+                    html.H3('39', style={'color': C_ORANGE, 'fontWeight': '700', 'margin': 0}),
+                    html.P('19 orig + 13 FE + 7 texto/imágenes', style={'color': TEXT_MUTED, 'fontSize': '0.75rem', 'margin': 0}),
                 ])
             ], style={'borderTop': f'3px solid {C_ORANGE}', 'borderRadius': '12px'}),
         ], md=4),
