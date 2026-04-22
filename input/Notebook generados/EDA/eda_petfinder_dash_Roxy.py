@@ -1245,32 +1245,45 @@ tab_texto_content = build_tab_texto()
 print('  Tab 5 — Modelo…')
 
 # ── Tab 4: Modelo ─────────────────────────────────────────────────────────────
-# Resultados del notebook 04_Tabulares V2 - Ejecutado Roxy
-# Actualizar con valores finales cuando termine Optuna + FE v2
-
-# ── Resultados finales v3 (Abril 2026) ──────────────────────────────────────
-# Original (profe): 04_Tabulares.ipynb  — Optuna CV sobre 19 features → CV 0.3639
-# Ajustado Roxy:    04_Tabulares_V2_SeccionF.ipynb — FE v2 + Optuna → Test 0.3371
+# Resultados finales v6 (Abril 2026)
+# nb04: Baseline 0.3133 | FE v1 0.3231 | FE v2+Optuna 0.3371
+# nb05: FE v3+Optuna simple 0.3595 | FE v3+Optuna CV 0.3381 | FE v4+Optuna CV 0.3867
+# nb06: Blend LGB(FE v4)+BERT 0.95/0.05 = 0.3699 (BERT no mejora)
+# nb07: SHAP selection 25 feat = 0.3738
+# nb08: XGB FE v4 = 0.3803 | Blend LGB+XGB 50/50 = 0.3906 (mejor)
 
 _modelos_df = pd.DataFrame({
     'Modelo': [
         'Baseline',
         'FE v1',
         'FE v2 + Optuna',
-        'FE v3 + Optuna simple',
-        'FE v3 + Optuna CV',
+        'FE v3 + Optuna',
+        'FE v4 + LGB CV',
+        'FE v4 + XGB CV',
+        'Blend LGB+XGB',
+        'Blend LGB+BERT',
+        'SHAP selection',
     ],
-    'Kappa Test': [0.3133, 0.3231, 0.3371, 0.3595, 0.3381],
-    'Kappa Train':[0.5877, 0.4677, 0.4677, 0.6363, 0.4281],
-    'Tipo':       ['Original', 'Ajustado Roxy', 'Ajustado Roxy', 'Ajustado Roxy', 'Ajustado Roxy'],
-    'Detalle':    ['19 feat · Original', '26 feat · Roxy', '32 feat · Roxy', '39 feat · Roxy', '41 feat · Roxy (mejor gap)'],
+    'Kappa Test': [0.3133, 0.3231, 0.3371, 0.3595, 0.3867, 0.3803, 0.3906, 0.3699, 0.3738],
+    'Kappa Train':[0.5877, 0.4677, 0.4677, 0.6363, 0.4612, 0.4530, 0.4580, 0.4612, 0.4490],
+    'Tipo':       ['Original', 'Ajustado Roxy', 'Ajustado Roxy', 'Ajustado Roxy',
+                   'FE v4', 'FE v4', 'Ensemble (mejor)', 'Ensemble', 'Seleccion SHAP'],
+    'Detalle':    ['19 feat · Original', '26 feat · Roxy', '32 feat · Roxy', '39 feat · Roxy',
+                   '48 feat · LightGBM', '48 feat · XGBoost',
+                   'LGB 50% + XGB 50% · mejor ensemble',
+                   'LGB 95% + DistilBERT 5%',
+                   '25 feat · SHAP >= 0.04'],
 })
 
 _fig_kappa = px.bar(
     _modelos_df, x='Modelo', y='Kappa Test',
     title='Comparativa de Modelos — Cohen Kappa (Test)',
     color='Tipo', template='plotly_white',
-    color_discrete_map={'Original': C_BLUE, 'Ajustado Roxy': C_GREEN},
+    color_discrete_map={
+        'Original': C_BLUE, 'Ajustado Roxy': C_GREEN,
+        'FE v4': '#10b981', 'Ensemble (mejor)': '#f59e0b',
+        'Ensemble': C_PURPLE, 'Seleccion SHAP': C_ORANGE,
+    },
     text='Kappa Test',
     hover_data={'Detalle': True, 'Tipo': False},
 )
@@ -1278,9 +1291,9 @@ _fig_kappa.update_traces(texttemplate='%{text:.4f}', textposition='outside')
 _fig_kappa.update_layout(showlegend=True,
                           yaxis=dict(range=[0, 0.55]),
                           yaxis_title='Cohen Kappa (quadratic)',
-                          xaxis=dict(tickangle=-30, tickfont=dict(size=12)),
+                          xaxis=dict(tickangle=-30, tickfont=dict(size=11)),
                           margin=dict(b=80),
-                          height=380)
+                          height=400)
 
 _fig_gap = px.bar(
     _modelos_df, x='Modelo',
@@ -1292,35 +1305,50 @@ _fig_gap = px.bar(
 )
 _fig_gap.update_layout(yaxis=dict(range=[0, 0.8]),
                         yaxis_title='Cohen Kappa (quadratic)',
-                        xaxis=dict(tickangle=-30, tickfont=dict(size=12)),
-                        margin=dict(b=80),
-                        height=380)
+                        xaxis=dict(tickangle=-30, tickfont=dict(size=10)),
+                        margin=dict(b=100),
+                        height=420)
 
-_feat_imp_df = pd.DataFrame({
-    'Feature':    ['desc_length', 'avg_label_score', 'sentiment_magnitude',
-                   'Age_x_PhotoAmt', 'Age', 'n_labels',
-                   'PhotoPerAnimal', 'Breed1', 'sentiment_score', 'n_sentences',
-                   'Color2', 'PhotoAmt', 'State', 'Color1', 'Breed2'],
-    'Importancia':[5500, 5200, 3100, 2800, 2600, 2400,
-                   2200, 2000, 1900, 1800,
-                   1600, 1500, 1400, 1300, 1200],
-    'Tipo': ['Texto/Imagen','Texto/Imagen','Texto/Imagen',
-             'FE v2','Original','Texto/Imagen',
-             'FE v1','Original','Texto/Imagen','Texto/Imagen',
-             'Original','Original','Original','Original','Original'],
-}).sort_values('Importancia')
+# SHAP importance FE v4 — top 20 (notebook 07, LightGBM + SHAP TreeExplainer)
+_shap_df = pd.DataFrame({
+    'Feature': [
+        'rescuer_n_pets', 'age_rel_breed', 'Breed1_enc', 'avg_label_score',
+        'sentiment_magnitude', 'avg_word_len', 'uppercase_ratio', 'State_enc',
+        'desc_length', 'Sterilized', 'Age_x_PhotoAmt', 'n_labels',
+        'PhotoPerAnimal', 'unique_words', 'Breed1', 'PhotoAmt',
+        'Gender', 'word_count', 'Age', 'n_sentences',
+    ],
+    'SHAP_importance': [
+        0.2784, 0.2433, 0.1694, 0.1028,
+        0.0916, 0.0864, 0.0852, 0.0752,
+        0.0704, 0.0655, 0.0653, 0.0634,
+        0.0604, 0.0558, 0.0537, 0.0491,
+        0.0484, 0.0464, 0.0448, 0.0439,
+    ],
+    'Tipo': [
+        'FE v4 nuevo', 'FE v4 nuevo', 'Target Enc.', 'Imagen/Vision',
+        'NLP/Sentiment', 'FE v4 nuevo', 'FE v4 nuevo', 'Target Enc.',
+        'NLP/Sentiment', 'Original', 'FE v2', 'Imagen/Vision',
+        'FE v1', 'FE v4 nuevo', 'Original', 'Original',
+        'Original', 'FE v4 nuevo', 'Original', 'NLP/Sentiment',
+    ],
+}).sort_values('SHAP_importance')
 
-_fig_fi = px.bar(
-    _feat_imp_df, x='Importancia', y='Feature', orientation='h',
-    title='Feature Importance (Gain) — Top 15 variables (FE v3)',
+_fig_shap = px.bar(
+    _shap_df, x='SHAP_importance', y='Feature', orientation='h',
+    title='SHAP Feature Importance — Top 20 (FE v4, LightGBM)',
     color='Tipo', template='plotly_white',
-    color_discrete_map={'Original': C_BLUE, 'FE v1': C_GREEN,
-                        'FE v2': C_ORANGE, 'Texto/Imagen': C_PURPLE},
+    color_discrete_map={
+        'FE v4 nuevo': '#10b981', 'Target Enc.': C_BLUE,
+        'Imagen/Vision': C_PURPLE, 'NLP/Sentiment': C_ORANGE,
+        'FE v2': '#6366f1', 'FE v1': '#0ea5e9', 'Original': C_MUTED,
+    },
+    hover_data={'SHAP_importance': ':.4f'},
 )
-_fig_fi.update_layout(showlegend=True)
+_fig_shap.update_layout(showlegend=True, xaxis_title='Mean |SHAP value|', height=500)
 
 tab_modelo_content = html.Div([
-    html.H5('Resultados del Modelado — LightGBM  |  v5 Final (Abril 2026)',
+    html.H5('Resultados del Modelado — LightGBM + XGBoost Ensemble  |  v6 Final (Abril 2026)',
             style={'color': TEXT_PRIMARY, 'fontWeight': '600', 'marginBottom': '0.3rem'}),
     html.P('Autores: Roxana Alberti · Sandra Sschicchi · Fernando Paganini · Baltazar Villanueva · Paula Calviello · Rosana Martinez',
            style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'marginBottom': '1rem'}),
@@ -1337,18 +1365,18 @@ tab_modelo_content = html.Div([
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.P('Mejor Kappa (Optimizado Roxy)', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
-                    html.H3('0.3595', style={'color': C_GREEN, 'fontWeight': '700', 'margin': 0}),
-                    html.P('+0.0462 vs baseline  •  FE v3 + Optuna 50 trials', style={'color': C_GREEN, 'fontSize': '0.75rem', 'margin': 0}),
+                    html.P('Mejor Kappa (Ensemble LGB+XGB)', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
+                    html.H3('0.3906', style={'color': '#f59e0b', 'fontWeight': '700', 'margin': 0}),
+                    html.P('+0.0773 vs baseline  •  LGB 50% + XGB 50%', style={'color': '#f59e0b', 'fontSize': '0.75rem', 'margin': 0}),
                 ])
-            ], style={'borderTop': f'3px solid {C_GREEN}', 'borderRadius': '12px'}),
+            ], style={'borderTop': '3px solid #10b981', 'borderRadius': '12px'}),
         ], md=4),
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.P('Features — Optimizado Roxy', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
-                    html.H3('39', style={'color': C_ORANGE, 'fontWeight': '700', 'margin': 0}),
-                    html.P('19 orig + 13 FE + 7 texto/imágenes', style={'color': TEXT_MUTED, 'fontSize': '0.75rem', 'margin': 0}),
+                    html.P('Features — FE v4 (mejor modelo)', style={'color': TEXT_MUTED, 'fontSize': '0.8rem', 'margin': 0}),
+                    html.H3('48', style={'color': C_ORANGE, 'fontWeight': '700', 'margin': 0}),
+                    html.P('19 orig + FE + texto + sentiment + FE v4', style={'color': TEXT_MUTED, 'fontSize': '0.75rem', 'margin': 0}),
                 ])
             ], style={'borderTop': f'3px solid {C_ORANGE}', 'borderRadius': '12px'}),
         ], md=4),
@@ -1358,7 +1386,7 @@ tab_modelo_content = html.Div([
         dbc.Col([dcc.Graph(figure=_fig_gap)],   md=6),
     ], className='g-3'),
     dbc.Row([
-        dbc.Col([dcc.Graph(figure=_fig_fi)], md=12),
+        dbc.Col([dcc.Graph(figure=_fig_shap)], md=12),
     ], className='g-3'),
 ])
 
