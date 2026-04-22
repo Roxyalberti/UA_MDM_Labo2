@@ -1098,9 +1098,12 @@ def build_tab_texto():
     try:
         sent_df = pd.read_csv(BASE / 'train_sentiment_features.csv')
         meta_df = pd.read_csv(BASE / 'train_metadata_features.csv')
+        raw = pd.read_csv(BASE / 'train' / 'train.csv', usecols=['PetID', 'Description'])
+        raw['desc_length'] = raw['Description'].fillna('').apply(len)
         df_s = df_main.merge(sent_df[['PetID','sentiment_score','sentiment_magnitude','n_sentences','language']], on='PetID', how='left')
         df_s = df_s.merge(meta_df[['PetID','avg_label_score','n_labels','crop_confidence']], on='PetID', how='left')
-        df_s['desc_length'] = df_s['Description'].fillna('').apply(len)
+        df_s = df_s.merge(raw[['PetID','desc_length']], on='PetID', how='left')
+        df_s['desc_length'] = df_s['desc_length'].fillna(0).astype(int)
         df_s['AdoptionLabel'] = df_s['AdoptionSpeed'].map(ADOPTION_LABELS)
         df_s = df_s.fillna(0)
     except Exception as e:
