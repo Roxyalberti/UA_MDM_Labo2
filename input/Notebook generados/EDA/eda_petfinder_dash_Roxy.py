@@ -1393,6 +1393,45 @@ tab_modelo_content = html.Div([
         ], md=4),
     ], className='g-3', style={'marginBottom': '1.5rem'}),
     dbc.Row([
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    html.H6('🔍  Hallazgos clave del análisis multimodal',
+                            style={'fontWeight': '700', 'color': C_BLUE, 'marginBottom': '0.6rem'}),
+                    html.Ul([
+                        html.Li('Las mascotas con más fotos se adoptan ~15 días más rápido en promedio.'),
+                        html.Li([html.Strong('rescuer_n_pets'), ' resultó la feature más importante según SHAP (0.278): rescatadores con más publicaciones generan mejores avisos.']),
+                        html.Li([html.Strong('age_rel_breed'), ' (edad relativa a la raza) captura si el animal es "viejo para su especie" — señal clave de adopción lenta.']),
+                        html.Li('El sentiment del texto y la calidad de imagen (Google Vision) aportan señales complementarias a los datos tabulares.'),
+                        html.Li('BERT (texto crudo) solo no mejora sobre el modelo tabular, pero aporta en el blend con 3% de peso.'),
+                    ], style={'paddingLeft': '1.2rem', 'fontSize': '0.82rem',
+                              'color': TEXT_PRIMARY, 'lineHeight': '1.9'}),
+                ])
+            ], style={'borderLeft': f'4px solid {C_BLUE}', 'borderRadius': '8px',
+                      'background': '#eff6ff', 'border': f'1px solid #bfdbfe',
+                      'borderLeftWidth': '4px', 'borderLeftColor': C_BLUE}),
+        ], md=6),
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    html.H6('⚠️  Prevención de fuga de datos (Data Leakage)',
+                            style={'fontWeight': '700', 'color': C_RED, 'marginBottom': '0.6rem'}),
+                    html.P('Se detectó y corrigió un error crítico durante el desarrollo:',
+                           style={'fontSize': '0.82rem', 'color': TEXT_PRIMARY, 'marginBottom': '0.4rem'}),
+                    html.Ul([
+                        html.Li([html.Strong('Error: '), 'calcular la media de AdoptionSpeed por rescatador sobre todo el train y usarla como feature → CV kappa 0.7685 (irreal).']),
+                        html.Li([html.Strong('Causa: '), 'el fold de validación "veía" el target a través de la media del rescatador → trampa estadística.']),
+                        html.Li([html.Strong('Solución: '), 'usar solo el conteo (rescuer_n_pets), sin involucrar el target. CV kappa bajó a valores realistas (~0.40).']),
+                        html.Li([html.Strong('Regla general: '), 'cualquier feature que use el target debe calcularse dentro del fold, nunca sobre todos los datos.']),
+                    ], style={'paddingLeft': '1.2rem', 'fontSize': '0.82rem',
+                              'color': TEXT_PRIMARY, 'lineHeight': '1.9'}),
+                ])
+            ], style={'borderLeft': f'4px solid {C_RED}', 'borderRadius': '8px',
+                      'background': '#fef2f2', 'border': f'1px solid #fecaca',
+                      'borderLeftWidth': '4px', 'borderLeftColor': C_RED}),
+        ], md=6),
+    ], className='g-3', style={'marginBottom': '1rem', 'marginTop': '0.5rem'}),
+    dbc.Row([
         dbc.Col([dcc.Graph(figure=_fig_kappa)], md=6),
         dbc.Col([dcc.Graph(figure=_fig_gap)],   md=6),
     ], className='g-3'),
